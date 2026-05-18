@@ -15,6 +15,8 @@
   import { Label } from "$lib/components/ui/label/index.js";
   import { LocationPicker } from "$lib/components/ui/location-picker/index.js";
 
+  import { SettingsDrawer } from "$lib/components/ui/settings-drawer/index.js";
+
   import ChevronUp from "@lucide/svelte/icons/chevron-up";
   import Pencil from "@lucide/svelte/icons/pencil";
   import Sun from "@lucide/svelte/icons/sun";
@@ -24,6 +26,7 @@
   const STORAGE_KEY = "soulweather_birth";
   const STORAGE_VERSION = 1;
   const THEME_KEY = "soulweather_theme";
+  const SETTINGS_KEY = "soulweather_settings";
 
   // ── State ─────────────────────────────────────────────────────────────────
   let birthDate = $state("");
@@ -40,6 +43,12 @@
 
   /** "dark" | "light" — chart palette and global theme. */
   let theme = $state("dark");
+
+  /** Whether planet abbreviations are shown on the chart. */
+  let showPlanetNames = $state(true);
+
+  /** Guards reactive effects from firing before onMount finishes restoring saved state. */
+  let mounted = $state(false);
 
   const SIGN_NAMES = ["Ari","Tau","Gem","Can","Leo","Vir","Lib","Sco","Sag","Cap","Aqu","Pis"];
 
@@ -159,17 +168,61 @@
     applyTheme(theme);
   }
 
+  function restoreSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (typeof saved?.showPlanetNames === "boolean") {
+        showPlanetNames = saved.showPlanetNames;
+      }
+    } catch {/* ignore */}
+  }
+
+  function saveSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ showPlanetNames }));
+    } catch {/* ignore */}
+  }
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   onMount(() => {
     restoreTheme();
+    restoreSettings();
     restore();
     refreshCurrentPlanets();
+    mounted = true;
     const timer = setInterval(refreshCurrentPlanets, 60_000);
     return () => clearInterval(timer);
+  });
+
+  // Persist settings whenever they change (after mount).
+  $effect(() => {
+    showPlanetNames; // track
+    if (mounted) saveSettings();
+  });
+
+  // Auto-save birth date/time whenever they change, so the most recent
+  // entry is always cached even before the form is submitted.
+  $effect(() => {
+    if (!mounted || (!birthDate && !birthTime)) return;
+    try {
+      const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ...existing,
+        v: STORAGE_VERSION,
+        date: birthDate,
+        time: birthTime,
+        location: birthLocation,
+      }));
+    } catch {/* ignore */}
   });
 </script>
 
 <div class="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center gap-4 px-4 py-4">
+  <!-- ── Settings Drawer ────────────────────────────────────────────── -->
+  <SettingsDrawer bind:showPlanetNames />
+
   <!-- ── Header ─────────────────────────────────────────────────────── -->
   <header class="w-full text-center">
     <div class="flex items-center justify-end">
@@ -258,6 +311,7 @@
       currentPlanets={currentPlanets}
       ascendant={birthAscendant}
       theme={theme}
+      showPlanetNames={showPlanetNames}
     />
   </div>
 
