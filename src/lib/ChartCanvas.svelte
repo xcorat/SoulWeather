@@ -88,17 +88,20 @@
     ctx.fillStyle = P.bg;
     ctx.fillRect(0, 0, W, H);
 
-    // Radii
-    const rOut    = R;           // outer edge
-    const rSign   = R * 0.82;   // inner edge of zodiac band (slightly thicker for bigger glyphs)
-    const rTrans  = R * 0.68;   // transit (current) planet ring
-    const rSplit  = R * 0.56;   // separator between outer & inner planet rings
-    const rNatal  = R * 0.44;   // natal (birth) planet ring
+    // Radii — 4 concentric boundaries create 4 sections (inside out):
+    //   inner empty  |  natal (1-2)  |  transit (2-3)  |  sign names (3-4)
+    const rOut    = R;           // circle 4: outer frame
+    const rSignI  = R * 0.78;   // circle 3: inner edge of sign names band
+    const rDots   = R * 0.58;   // circle 2: dot ring (natal + transit markers)
+    const rNatalI = R * 0.34;   // circle 1: inner edge of natal band
+    // center → rNatalI: inner empty
 
-    // ── Zodiac band fill ─────────────────────────────────────────────────────
+    const signBandW  = rOut   - rSignI;   // width of sign names band
+
+    // ── Zodiac band fill (sign names section: circle 3 → circle 4) ──────────
     ctx.beginPath();
     ctx.arc(cx, cy, rOut, 0, Math.PI * 2);
-    ctx.arc(cx, cy, rSign, 0, Math.PI * 2, true);
+    ctx.arc(cx, cy, rSignI, 0, Math.PI * 2, true);
     ctx.fillStyle = P.band;
     ctx.fill();
 
@@ -112,15 +115,14 @@
       // signs increase counter-clockwise, which maps to clockwise on the
       // canvas (Y axis is inverted), so we draw the arc with anticlockwise=true.
       ctx.arc(cx, cy, rOut, startA, endA, true);
-      ctx.arc(cx, cy, rSign, endA, startA, false);
+      ctx.arc(cx, cy, rSignI, endA, startA, false);
       ctx.closePath();
       ctx.fillStyle = P.bandAlt;
       ctx.fill();
     }
 
-    // ── Circles ──────────────────────────────────────────────────────────────
-    const circles = [rOut, rSign, rSplit];
-    circles.forEach((r, i) => {
+    // ── 4 boundary circles ───────────────────────────────────────────────────
+    [rOut, rSignI, rDots, rNatalI].forEach((r, i) => {
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.strokeStyle = i === 0 ? P.ringOuter : P.ring;
@@ -128,21 +130,10 @@
       ctx.stroke();
     });
 
-    // Extra dashed ring at rTrans and rNatal for planet reference
-    [rTrans, rNatal].forEach(r => {
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.setLineDash([3, 5]);
-      ctx.strokeStyle = P.ringDash;
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-      ctx.setLineDash([]);
-    });
-
     // ── Sign dividers ────────────────────────────────────────────────────────
     for (let i = 0; i < 12; i++) {
-      const [x1, y1] = polarXY(cx, cy, rSign, i * 30);
-      const [x2, y2] = polarXY(cx, cy, rOut,  i * 30);
+      const [x1, y1] = polarXY(cx, cy, rSignI, i * 30);
+      const [x2, y2] = polarXY(cx, cy, rOut,   i * 30);
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
@@ -156,7 +147,7 @@
       const isSign = deg % 30 === 0;
       if (isSign) continue; // already drawn as divider
       const tick = (deg % 10 === 0 ? 0.55 : 0.75);
-      const r1 = rSign + (rOut - rSign) * tick;
+      const r1 = rSignI + signBandW * tick;
       const [x1, y1] = polarXY(cx, cy, r1, deg);
       const [x2, y2] = polarXY(cx, cy, rOut, deg);
       ctx.beginPath();
@@ -168,14 +159,14 @@
     }
 
     // ── Zodiac glyphs (upright) and sign names (rotated along outer arc) ────
-    const rGlyph   = rSign + (rOut - rSign) * 0.38;  // inner portion of band
-    const rNameArc = rSign + (rOut - rSign) * 0.80;  // near outer edge of band
+    const rGlyph   = rSignI + signBandW * 0.38;  // inner portion of sign band
+    const rNameArc = rSignI + signBandW * 0.80;  // near outer edge of sign band
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (let i = 0; i < 12; i++) {
       const midLon = i * 30 + 15;
       const [gx, gy] = polarXY(cx, cy, rGlyph, midLon);
-      ctx.font = `${R * 0.082}px serif`;
+      ctx.font = `${signBandW * 0.55}px serif`;
       ctx.fillStyle = P.glyph;
       ctx.fillText(ZODIAC_GLYPHS[i], gx, gy);
 
@@ -188,7 +179,7 @@
       let rot = a + Math.PI / 2;
       if (Math.sin(a) > 0) rot += Math.PI; // flip lower-half text to stay readable
       ctx.rotate(rot);
-      ctx.font = `${R * 0.042}px sans-serif`;
+      ctx.font = `${signBandW * 0.28}px sans-serif`;
       ctx.fillStyle = P.signAbbr;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -218,14 +209,19 @@
     }
 
     // ── Planet ring drawing helper ───────────────────────────────────────────
-    function drawRing(planets, ringR, isOuter) {
+    // Draws planet glyphs centred in the band between rInner and rOuter.
+    // Icon size is set to ≥ 75% of the band width.
+    function drawRing(planets, rInner, rOuter) {
       if (!planets || !planets.length) return;
+      const bandW   = rOuter - rInner;
+      const centerR = (rInner + rOuter) / 2;
+
       // Sort by longitude for collision handling
       const sorted = [...planets].sort((a, b) => a.lon - b.lon);
 
       // Assign angular offsets to avoid label overlap
       const placed = [];
-      const MIN_GAP = 11; // minimum degrees between labels (slightly larger fonts → more spacing)
+      const MIN_GAP = 11; // minimum degrees between labels
 
       sorted.forEach(p => {
         let slot = p.lon;
@@ -240,56 +236,57 @@
       });
 
       placed.forEach(p => {
-        const dotA = lonAngle(p.lon);
         const labelA = lonAngle(p.slot);
-
-        const dotR   = ringR;
-        const labelR = ringR + R * 0.10; // labels go outward for both rings
-
-        const dotX = cx + dotR * Math.cos(dotA);
-        const dotY = cy + dotR * Math.sin(dotA);
-
-        // Dot at exact position
-        ctx.beginPath();
-        ctx.arc(dotX, dotY, R * 0.014, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-
-        // Tick line from ring boundary
-        const tickR = isOuter ? rSign - 2 : rSplit - 2;
-        const tickX = cx + tickR * Math.cos(dotA);
-        const tickY = cy + tickR * Math.sin(dotA);
-        ctx.beginPath();
-        ctx.moveTo(tickX, tickY);
-        ctx.lineTo(dotX, dotY);
-        ctx.strokeStyle = p.color + '55';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-
-        // Label (symbol + abbr) — always horizontal for legibility.
-        const lx = cx + labelR * Math.cos(labelA);
-        const ly = cy + labelR * Math.sin(labelA);
+        const lx = cx + centerR * Math.cos(labelA);
+        const ly = cy + centerR * Math.sin(labelA);
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        ctx.font = `bold ${R * 0.072}px serif`;
-        ctx.fillStyle = p.color;
-        ctx.fillText(p.symbol, lx, showNames ? ly - R * 0.034 : ly);
-
         if (showNames) {
-          ctx.font = `${R * 0.046}px sans-serif`;
+          // Symbol in upper portion, abbreviation in lower portion of band
+          ctx.font = `bold ${bandW * 0.50}px serif`;
+          ctx.fillStyle = p.color;
+          ctx.fillText(p.symbol, lx, ly - bandW * 0.18);
+
+          ctx.font = `${bandW * 0.30}px sans-serif`;
           ctx.fillStyle = p.color + 'cc';
-          ctx.fillText(p.abbr, lx, ly + R * 0.034);
+          ctx.fillText(p.abbr, lx, ly + bandW * 0.28);
+        } else {
+          // Symbol alone fills ≥ 75% of band width
+          ctx.font = `bold ${bandW * 0.75}px serif`;
+          ctx.fillStyle = p.color;
+          ctx.fillText(p.symbol, lx, ly);
         }
       });
     }
 
-    // ── Draw natal planets (inner ring) ──────────────────────────────────────
-    drawRing(bp, rNatal, false);
+    // ── Dot ring helper (circle 2 — exact planetary positions) ──────────────
+    // Draws small coloured dots at the exact longitude on the rDots circle.
+    // Natal dots are slightly more opaque; transit dots slightly more transparent.
+    // Overlapping dots are fine — the alpha makes them distinguishable.
+    function drawDots(planets, alpha) {
+      if (!planets || !planets.length) return;
+      planets.forEach(p => {
+        const a  = lonAngle(p.lon);
+        const dx = cx + rDots * Math.cos(a);
+        const dy = cy + rDots * Math.sin(a);
+        ctx.beginPath();
+        ctx.arc(dx, dy, R * 0.018, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + alpha;
+        ctx.fill();
+      });
+    }
 
-    // ── Draw transit planets (outer ring) ────────────────────────────────────
-    drawRing(cp, rTrans, true);
+    // ── Draw natal planets (section 1-2) ─────────────────────────────────────
+    drawRing(bp, rNatalI, rDots);
+
+    // ── Draw transit planets (section 2-3) ───────────────────────────────────
+    drawRing(cp, rDots, rSignI);
+
+    // ── Draw dot ring (circle 2 — natal + transit markers with alpha) ────────
+    drawDots(bp, 'cc');   // natal: more opaque
+    drawDots(cp, '88');   // transit: more transparent
     // ── Center decorative dot ─────────────────────────────────────────────────
     ctx.beginPath();
     ctx.arc(cx, cy, R * 0.012, 0, Math.PI * 2);
