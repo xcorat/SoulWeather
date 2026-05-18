@@ -1,7 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import ChartCanvas from "./lib/ChartCanvas.svelte";
-  import { julianDay, computePlanets } from "./lib/ephemeris.js";
+  import { julianDay, computePlanets, ascendant as computeAscendant } from "./lib/ephemeris.js";
   import {
     browserTimeZone,
     zonedTimeToUtcDate,
@@ -17,10 +17,13 @@
 
   import ChevronUp from "@lucide/svelte/icons/chevron-up";
   import Pencil from "@lucide/svelte/icons/pencil";
+  import Sun from "@lucide/svelte/icons/sun";
+  import Moon from "@lucide/svelte/icons/moon";
 
   // ── localStorage schema version (bumped from v0 integer-tz to v1 IANA-tz) ─
   const STORAGE_KEY = "soulweather_birth";
   const STORAGE_VERSION = 1;
+  const THEME_KEY = "soulweather_theme";
 
   // ── State ─────────────────────────────────────────────────────────────────
   let birthDate = $state("");
@@ -30,8 +33,13 @@
 
   let birthPlanets = $state([]);
   let currentPlanets = $state([]);
+  /** Sidereal (Lahiri) ascendant longitude of the natal chart, or null. */
+  let birthAscendant = $state(null);
   let currentLabel = $state("");
   let showForm = $state(true);
+
+  /** "dark" | "light" — chart palette and global theme. */
+  let theme = $state("dark");
 
   const SIGN_NAMES = ["Ari","Tau","Gem","Can","Leo","Vir","Lib","Sco","Sag","Cap","Aqu","Pis"];
 
@@ -80,6 +88,9 @@
     const jd = birthJD();
     if (jd !== null) {
       birthPlanets = computePlanets(jd);
+      birthAscendant = birthLocation
+        ? computeAscendant(jd, birthLocation.lat, birthLocation.lon)
+        : null;
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           v: STORAGE_VERSION,
@@ -111,6 +122,9 @@
         const jd = birthJD();
         if (jd !== null) {
           birthPlanets = computePlanets(jd);
+          birthAscendant = birthLocation
+            ? computeAscendant(jd, birthLocation.lat, birthLocation.lon)
+            : null;
           showForm = false;
         }
       }
@@ -121,8 +135,33 @@
     birthLocation = loc;
   }
 
+  // ── Theme ─────────────────────────────────────────────────────────────────
+  function applyTheme(t) {
+    if (typeof document === "undefined") return;
+    document.documentElement.classList.toggle("dark", t === "dark");
+  }
+
+  function toggleTheme() {
+    theme = theme === "dark" ? "light" : "dark";
+    applyTheme(theme);
+    try { localStorage.setItem(THEME_KEY, theme); } catch {/* ignore */}
+  }
+
+  function restoreTheme() {
+    let saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch {/* ignore */}
+    if (saved === "light" || saved === "dark") {
+      theme = saved;
+    } else if (typeof window !== "undefined" && window.matchMedia) {
+      // Respect OS preference on first load.
+      theme = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+    applyTheme(theme);
+  }
+
   // ── Lifecycle ─────────────────────────────────────────────────────────────
   onMount(() => {
+    restoreTheme();
     restore();
     refreshCurrentPlanets();
     const timer = setInterval(refreshCurrentPlanets, 60_000);
@@ -133,6 +172,21 @@
 <div class="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center gap-4 px-4 py-4">
   <!-- ── Header ─────────────────────────────────────────────────────── -->
   <header class="w-full text-center">
+    <div class="flex items-center justify-end">
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+        title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+        onclick={toggleTheme}
+      >
+        {#if theme === "dark"}
+          <Sun class="size-4" />
+        {:else}
+          <Moon class="size-4" />
+        {/if}
+      </Button>
+    </div>
     <h1 class="text-2xl font-light tracking-[0.1em] text-[oklch(0.78_0.05_260)]">☽ Soul Weather</h1>
     <p class="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
       Vedic Planetary Chart · Sidereal (Lahiri)
@@ -186,12 +240,14 @@
   {/if}
 
   <!-- ── Chart ──────────────────────────────────────────────────────── -->
-  <div class="aspect-square w-full max-w-[680px] overflow-hidden rounded-full border bg-[oklch(0.10_0.04_270)]">
+  <div class="aspect-square w-full max-w-[680px] overflow-hidden rounded-full border bg-[oklch(0.10_0.04_270)] dark:bg-[oklch(0.10_0.04_270)]">
     <ChartCanvas
       birthPlanets={birthPlanets}
       currentPlanets={currentPlanets}
       birthLabel={birthLabel}
       currentLabel={currentLabel}
+      ascendant={birthAscendant}
+      theme={theme}
     />
   </div>
 

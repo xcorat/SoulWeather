@@ -171,6 +171,60 @@ export function lahiriAyanamsa(jd) {
   return mod360(23.853 + 1.3972 * T);
 }
 
+/**
+ * Mean obliquity of the ecliptic (degrees) — IAU 2006 simplified.
+ */
+function meanObliquity(jd) {
+  const T = jT(jd);
+  return 23.4392911 - 0.0130042 * T - 1.64e-7 * T * T + 5.04e-7 * T * T * T;
+}
+
+/**
+ * Greenwich Mean Sidereal Time at `jd` (degrees, 0–360).
+ * Meeus eq. 12.4.
+ */
+function gmstDeg(jd) {
+  const T = jT(jd);
+  const theta =
+    280.46061837 +
+    360.98564736629 * (jd - 2451545.0) +
+    0.000387933 * T * T -
+    (T * T * T) / 38710000;
+  return mod360(theta);
+}
+
+/**
+ * Compute the sidereal (Lahiri) Ascendant — the ecliptic longitude rising on
+ * the eastern horizon at the given moment and geographic location.
+ *
+ * @param {number} jd       Julian Day (UTC).
+ * @param {number} latDeg   Geographic latitude, degrees (north +).
+ * @param {number} lonEast  Geographic longitude, degrees east of Greenwich.
+ * @returns {number} Sidereal longitude of the ascendant in degrees (0–360).
+ */
+export function ascendant(jd, latDeg, lonEast) {
+  const eps = meanObliquity(jd) * RAD;
+  const lst = mod360(gmstDeg(jd) + lonEast); // local sidereal time = RAMC
+  const ramc = lst * RAD;
+  const phi = latDeg * RAD;
+  // Standard ascendant formula (tropical):
+  //   ASC = atan2( cos(RAMC), -(sin(RAMC)*cos(eps) + tan(phi)*sin(eps)) )
+  let asc =
+    Math.atan2(
+      Math.cos(ramc),
+      -(Math.sin(ramc) * Math.cos(eps) + Math.tan(phi) * Math.sin(eps)),
+    ) / RAD;
+  asc = mod360(asc);
+  // atan2 returns either the ascendant or its opposite (the descendant). The
+  // true ascendant lies ~90° east of the MC along the ecliptic; if our value
+  // landed on the descendant half, flip it by 180°.
+  const mc = mod360(Math.atan2(Math.sin(ramc), Math.cos(ramc) * Math.cos(eps)) / RAD);
+  const diff = mod360(asc - mc);
+  if (diff < 90 || diff > 270) asc = mod360(asc + 180);
+  // Convert tropical → sidereal (Lahiri)
+  return mod360(asc - lahiriAyanamsa(jd));
+}
+
 /** Planet metadata */
 export const PLANETS = [
   { id: 'sun',     name: 'Sun',     symbol: '☉', abbr: 'Su', color: '#FFD700' },
