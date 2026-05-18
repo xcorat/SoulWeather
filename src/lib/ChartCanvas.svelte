@@ -39,6 +39,10 @@
       legend:    '#556677',
       ascLine:   '#ffcc66',
       ascLabel:  '#ffcc66',
+      houseAngular:   '#ffcc66',
+      houseAngularBg: 'rgba(255,204,80,0.10)',
+      houseNormal:    '#445577',
+      houseNormalBg:  null,
     },
     light: {
       bg:        '#f6f6fb',
@@ -58,6 +62,10 @@
       legend:    '#5a6585',
       ascLine:   '#c87a1e',
       ascLabel:  '#c87a1e',
+      houseAngular:   '#a05010',
+      houseAngularBg: 'rgba(160,80,16,0.10)',
+      houseNormal:    '#8090b0',
+      houseNormalBg:  null,
     },
   };
 
@@ -302,19 +310,49 @@
     // ── Draw dot ring (circle 2 — natal + transit markers with alpha) ────────
     drawDots(bp, 'cc');   // natal: more opaque
     drawDots(cp, '88');   // transit: more transparent
+    // ── House sectors and numbers ─────────────────────────────────────────────
+    // In whole-sign houses the sign containing the ascendant is house 1;
+    // subsequent signs are houses 2-12 in order.
+    const ANGULAR_HOUSES = new Set([1, 4, 7, 10]);
+    const ascSignIndex = ascendant != null ? Math.floor(((ascendant % 360) + 360) % 360 / 30) : 0;
+    const rHouseNum = rNatalI * 0.62;   // label radius inside inner-empty area
+
+    for (let i = 0; i < 12; i++) {
+      const houseNum = ((i - ascSignIndex) % 12 + 12) % 12 + 1;
+      const isAngular = ANGULAR_HOUSES.has(houseNum);
+
+      // Sector background fill for angular houses
+      if (isAngular && P.houseAngularBg) {
+        const startA = lonAngle(i * 30);
+        const endA   = lonAngle((i + 1) * 30);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, rNatalI, startA, endA, true);
+        ctx.closePath();
+        ctx.fillStyle = P.houseAngularBg;
+        ctx.fill();
+      }
+
+      // House number label
+      const midLon = i * 30 + 15;
+      const [hx, hy] = polarXY(cx, cy, rHouseNum, midLon);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      if (isAngular) {
+        ctx.font = `bold ${R * 0.055}px sans-serif`;
+        ctx.fillStyle = P.houseAngular;
+      } else {
+        ctx.font = `${R * 0.045}px sans-serif`;
+        ctx.fillStyle = P.houseNormal;
+      }
+      ctx.fillText(String(houseNum), hx, hy);
+    }
+
     // ── Center decorative dot ─────────────────────────────────────────────────
     ctx.beginPath();
     ctx.arc(cx, cy, R * 0.012, 0, Math.PI * 2);
     ctx.fillStyle = P.ring;
     ctx.fill();
-
-    // ── Legend ────────────────────────────────────────────────────────────────
-    const legX = 8, legY = H - 22;
-    ctx.font = `${R * 0.038}px sans-serif`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = P.legend;
-    ctx.fillText('Inner: Natal  ·  Outer: Transit  ·  Vedic / Sidereal (Lahiri)', legX, legY);
   }
 
   onMount(() => {

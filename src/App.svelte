@@ -241,9 +241,6 @@
       </Button>
     </div>
     <h1 class="text-2xl font-light tracking-[0.1em] text-[oklch(0.78_0.05_260)]">☽ Soul Weather</h1>
-    <p class="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-      Vedic Planetary Chart · Sidereal (Lahiri)
-    </p>
     <Button
       variant="outline"
       size="sm"
