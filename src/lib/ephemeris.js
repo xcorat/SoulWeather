@@ -215,8 +215,9 @@ export function ascendant(jd, latDeg, lonEast) {
       -(Math.sin(ramc) * Math.cos(eps) + Math.tan(phi) * Math.sin(eps)),
     ) / RAD;
   asc = mod360(asc);
-  // The ascendant must lie within ~90° east of the MC (which is RAMC on the
-  // ecliptic). When the atan2 branch lands on the descendant, flip by 180°.
+  // atan2 returns either the ascendant or its opposite (the descendant). The
+  // true ascendant lies ~90° east of the MC along the ecliptic; if our value
+  // landed on the descendant half, flip it by 180°.
   const mc = mod360(Math.atan2(Math.sin(ramc), Math.cos(ramc) * Math.cos(eps)) / RAD);
   const diff = mod360(asc - mc);
   if (diff < 90 || diff > 270) asc = mod360(asc + 180);

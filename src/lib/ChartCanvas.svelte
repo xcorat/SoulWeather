@@ -337,9 +337,10 @@
 
   $effect(() => {
     // Re-draw whenever planet data, labels, ascendant, or theme change.
-    // Reference reactive deps so Svelte tracks them.
-    void birthPlanets; void currentPlanets; void birthLabel; void currentLabel;
-    void ascendant; void theme;
+    // The argument references below are what Svelte's reactivity tracks;
+    // `ascendant` and `theme` are read via closure inside `drawChart`, so
+    // touch them here so the effect re-runs when they change.
+    ascendant; theme;
     drawChart(birthPlanets, currentPlanets, birthLabel, currentLabel);
   });
 </script>
