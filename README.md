@@ -39,3 +39,47 @@ npm run build     # production build in dist/
 2. Enter your birth date, time, and UTC offset
 3. Click **Draw chart**
 4. The outer ring shows today's transits; they update every minute
+
+---
+
+## Hosting
+
+### GitHub Pages (automatic, free)
+
+The repo includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that
+builds and publishes the app on every push to `main`.
+
+**One-time setup** (only needed once per repo):
+
+1. Go to **Settings → Pages** in this repository.
+2. Under **Source**, select **GitHub Actions**.
+3. Save.
+
+After the next push to `main` the workflow will run and the app will be live at:
+
+```
+https://xcorat.github.io/SoulWeather/
+```
+
+You can also trigger a deploy manually from the **Actions** tab → *Deploy to GitHub Pages* → **Run workflow**.
+
+---
+
+### Cloudflare Pages (automatic, free)
+
+No code changes needed — Cloudflare reads the same build output.
+
+1. Log in to [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages → Create application → Pages → Connect to Git**.
+2. Authorise Cloudflare to access your GitHub account and pick the `SoulWeather` repository.
+3. Set the build settings:
+   | Setting | Value |
+   |---------|-------|
+   | Build command | `npm run build` |
+   | Build output directory | `dist` |
+   | Root directory | *(leave blank)* |
+4. Click **Save and Deploy**.
+
+Cloudflare will deploy automatically on every push to `main` (or your production branch). The app will be available at a `*.pages.dev` URL and you can attach a custom domain from the dashboard.
+
+> **Tip:** both providers are free for public repositories and personal/hobby projects.
+
