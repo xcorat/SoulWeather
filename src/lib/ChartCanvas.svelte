@@ -6,6 +6,7 @@
     currentPlanets = [],
     ascendant = null,
     theme = 'dark',
+    showPlanetNames = true,
   } = $props();
 
   let canvas = $state(null);
@@ -71,7 +72,7 @@
     return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
   }
 
-  function drawChart(bp = birthPlanets, cp = currentPlanets) {
+  function drawChart(bp = birthPlanets, cp = currentPlanets, showNames = showPlanetNames) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const W = canvas.width;
@@ -219,7 +220,6 @@
     // ── Planet ring drawing helper ───────────────────────────────────────────
     function drawRing(planets, ringR, isOuter) {
       if (!planets || !planets.length) return;
-
       // Sort by longitude for collision handling
       const sorted = [...planets].sort((a, b) => a.lon - b.lon);
 
@@ -275,11 +275,13 @@
 
         ctx.font = `bold ${R * 0.072}px serif`;
         ctx.fillStyle = p.color;
-        ctx.fillText(p.symbol, lx, ly - R * 0.034);
+        ctx.fillText(p.symbol, lx, showNames ? ly - R * 0.034 : ly);
 
-        ctx.font = `${R * 0.046}px sans-serif`;
-        ctx.fillStyle = p.color + 'cc';
-        ctx.fillText(p.abbr, lx, ly + R * 0.034);
+        if (showNames) {
+          ctx.font = `${R * 0.046}px sans-serif`;
+          ctx.fillStyle = p.color + 'cc';
+          ctx.fillText(p.abbr, lx, ly + R * 0.034);
+        }
       });
     }
 
@@ -288,7 +290,6 @@
 
     // ── Draw transit planets (outer ring) ────────────────────────────────────
     drawRing(cp, rTrans, true);
-
     // ── Center decorative dot ─────────────────────────────────────────────────
     ctx.beginPath();
     ctx.arc(cx, cy, R * 0.012, 0, Math.PI * 2);
@@ -322,12 +323,9 @@
   });
 
   $effect(() => {
-    // Re-draw whenever planet data, labels, ascendant, or theme change.
-    // The argument references below are what Svelte's reactivity tracks;
-    // `ascendant` and `theme` are read via closure inside `drawChart`, so
-    // touch them here so the effect re-runs when they change.
-    ascendant; theme;
-    drawChart(birthPlanets, currentPlanets);
+    // Re-draw whenever planet data, ascendant, theme, or showPlanetNames change.
+    ascendant; theme; showPlanetNames;
+    drawChart(birthPlanets, currentPlanets, showPlanetNames);
   });
 </script>
 
