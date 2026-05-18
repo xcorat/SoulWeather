@@ -14,6 +14,10 @@
   const ZODIAC_GLYPHS = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
   const SIGN_NAMES = ['Ari','Tau','Gem','Can','Leo','Vir','Lib','Sco','Sag','Cap','Aqu','Pis'];
   const D2R = Math.PI / 180;
+  const ICON_SIZE_RATIO = 0.75;          // requested shared icon proportion
+  const GLYPH_WIDTH_BUFFER = 1.05;       // account for font glyph width variance
+  const BREATHING_ROOM_DEG = 0.5;        // tiny spacing so adjacent icons don't touch
+  const DOT_RADIUS_RATIO = 0.018;        // exact-position marker size on shared dot ring
 
   // Theme palettes ─────────────────────────────────────────────────────────
   const PALETTES = {
@@ -159,8 +163,8 @@
     }
 
     // ── Zodiac glyphs (upright) and sign names (rotated along outer arc) ────
-    const rGlyph   = rSignI + signBandW * 0.38;  // inner portion of sign band
-    const rNameArc = rSignI + signBandW * 0.80;  // near outer edge of sign band
+    const rGlyph = rSignI + signBandW * 0.38;    // inner portion of sign band
+    const rNameArc = rOut;                       // outermost circle (ASC ring)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (let i = 0; i < 12; i++) {
@@ -224,8 +228,8 @@
       // to exceed the icon width (≈ iconSize) plus a small padding. When
       // abbreviations are shown they sit under the symbol at 0.6× size so the
       // symbol still dominates the horizontal footprint.
-      const iconWidth = iconSize * 1.05;
-      const MIN_GAP   = (iconWidth / centerR) * (180 / Math.PI) + 0.5;
+      const iconWidth = iconSize * GLYPH_WIDTH_BUFFER;
+      const minGap = (iconWidth / centerR) * (180 / Math.PI) + BREATHING_ROOM_DEG;
 
       // Assign angular slots avoiding overlap. Each new planet is pushed
       // forward from its true longitude only as far as needed to clear the
@@ -235,7 +239,7 @@
         let slot = p.lon;
         if (placed.length > 0) {
           const prev = placed[placed.length - 1];
-          const minSlot = prev.slot + MIN_GAP;
+          const minSlot = prev.slot + minGap;
           if (slot < minSlot) slot = minSlot;
         }
         placed.push({ ...p, slot });
@@ -277,17 +281,17 @@
         const dx = cx + rDots * Math.cos(a);
         const dy = cy + rDots * Math.sin(a);
         ctx.beginPath();
-        ctx.arc(dx, dy, R * 0.018, 0, Math.PI * 2);
+        ctx.arc(dx, dy, R * DOT_RADIUS_RATIO, 0, Math.PI * 2);
         ctx.fillStyle = p.color + alpha;
         ctx.fill();
       });
     }
 
-    // ── Draw planet rings — shared icon size = 75% of the smaller band, so
-    //    natal and transit glyphs are visually identical. ─────────────────────
+    // ── Draw planet rings — shared icon size is 75% of the smaller band.
+    //    This keeps natal/transit icons identical while ensuring both fit. ────
     const natalBandW = rDots  - rNatalI;
     const transBandW = rSignI - rDots;
-    const iconSize   = Math.min(natalBandW, transBandW) * 0.75;
+    const iconSize   = Math.min(natalBandW, transBandW) * ICON_SIZE_RATIO;
 
     // Natal planets (section 1-2)
     drawRing(bp, rNatalI, rDots, iconSize);
