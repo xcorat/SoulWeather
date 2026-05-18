@@ -21,7 +21,7 @@
     return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
   }
 
-  function drawChart() {
+  function drawChart(bp = birthPlanets, cp = currentPlanets, bl = birthLabel, cl = currentLabel) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const W = canvas.width;
@@ -212,22 +212,22 @@
     }
 
     // ── Draw natal planets (inner ring) ──────────────────────────────────────
-    drawRing(birthPlanets, rNatal, false);
+    drawRing(bp, rNatal, false);
 
     // ── Draw transit planets (outer ring) ────────────────────────────────────
-    drawRing(currentPlanets, rTrans, true);
+    drawRing(cp, rTrans, true);
 
     // ── Center info ──────────────────────────────────────────────────────────
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    if (birthLabel) {
+    if (bl) {
       ctx.font = `bold ${R * 0.07}px serif`;
       ctx.fillStyle = '#aabbdd';
       ctx.fillText('☽', cx, cy - R * 0.08);
       ctx.font = `${R * 0.04}px sans-serif`;
       ctx.fillStyle = '#778899';
-      ctx.fillText(birthLabel, cx, cy + R * 0.01);
+      ctx.fillText(bl, cx, cy + R * 0.01);
     } else {
       ctx.font = `${R * 0.05}px sans-serif`;
       ctx.fillStyle = '#445566';
@@ -236,10 +236,10 @@
       ctx.fillText('to see natal chart', cx, cy + R * 0.04);
     }
 
-    if (currentLabel) {
+    if (cl) {
       ctx.font = `${R * 0.033}px sans-serif`;
       ctx.fillStyle = '#556677';
-      ctx.fillText(`Transit: ${currentLabel}`, cx, cy + R * 0.12);
+      ctx.fillText(`Transit: ${cl}`, cx, cy + R * 0.12);
     }
 
     // ── Legend ────────────────────────────────────────────────────────────────
@@ -270,11 +270,7 @@
 
   $effect(() => {
     // Re-draw whenever planet data or labels change
-    void birthPlanets;
-    void currentPlanets;
-    void birthLabel;
-    void currentLabel;
-    drawChart();
+    drawChart(birthPlanets, currentPlanets, birthLabel, currentLabel);
   });
 </script>
 

@@ -161,8 +161,10 @@ function geoLon(planet, d) {
 }
 
 /**
- * Lahiri ayanamsa (degrees) — for tropical → sidereal conversion
- * ~23.85° at J2000.0, rate ~50.3"/year = 1.397°/century
+ * Lahiri (Chitra-Paksha) ayanamsa (degrees) — for tropical → sidereal conversion.
+ * Value at J2000.0 epoch: ~23.853°; precession rate: ~50.3"/year = 1.3972°/century.
+ * Source: Indian Astronomical Ephemeris (IAE); see also Meeus "Astronomical Algorithms"
+ * Ch. 27 for the general precession context.
  */
 export function lahiriAyanamsa(jd) {
   const T = jT(jd);

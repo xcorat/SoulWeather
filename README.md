@@ -1,43 +1,41 @@
-# Svelte + Vite
+# Soul Weather 🌙
 
-This template should help get you started developing with Svelte in Vite.
+A Vedic astrology birth-chart web app built with **Svelte 5** and **Canvas**.
 
-## Recommended IDE Setup
+## Features
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+- **Dual-ring zodiac wheel** rendered on HTML Canvas:
+  - **Inner ring** — natal (birth-chart) planetary positions
+  - **Outer ring** — live transit (current) positions, auto-refreshed every minute
+- **9 bodies**: Sun ☉, Moon ☽, Mercury ☿, Venus ♀, Mars ♂, Jupiter ♃, Saturn ♄, Rahu ☊, Ketu ☋
+- **Vedic / Sidereal** positions using the Lahiri (Chitra-Paksha) ayanamsa
+- **Planetary position tables** below the chart (sign + degree in sign)
+- Birth data **persisted in `localStorage`** — no server needed
 
-## Need an official Svelte framework?
+## Calculations
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+Pure-JavaScript ephemeris (`src/lib/ephemeris.js`), no WASM or external services required:
 
-## Technical considerations
+| Body | Method | Accuracy |
+|------|--------|----------|
+| Sun | Meeus Ch. 25 equation of center | ~1 arcmin |
+| Moon | Meeus Ch. 47 30-term series | ~5 arcmin |
+| Mercury – Saturn | Kepler solver with VSOP mean elements | ~1–2° |
+| Rahu / Ketu | Mean ascending node + 180° | ~10 arcmin |
 
-**Why use this over SvelteKit?**
+Sufficient for astrology across the range **1900–2100**.
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+## Getting started
 
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `checkJs` in the JS template?**
-
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```js
-// store.js
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```bash
+npm install
+npm run dev       # dev server at http://localhost:5173
+npm run build     # production build in dist/
 ```
+
+## Usage
+
+1. Open the app in a browser
+2. Enter your birth date, time, and UTC offset
+3. Click **Draw chart**
+4. The outer ring shows today's transits; they update every minute
