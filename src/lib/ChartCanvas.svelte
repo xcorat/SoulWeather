@@ -219,18 +219,24 @@
       // Sort by longitude for collision handling
       const sorted = [...planets].sort((a, b) => a.lon - b.lon);
 
-      // Assign angular offsets to avoid label overlap
-      const placed = [];
-      const MIN_GAP = 11; // minimum degrees between labels
+      // Minimum angular gap (degrees) so adjacent icons don't visually overlap.
+      // Arc length at centerR for angle θ° is centerR · θ · π/180. We need this
+      // to exceed the icon width (≈ iconSize) plus a small padding. When
+      // abbreviations are shown they sit under the symbol at 0.6× size so the
+      // symbol still dominates the horizontal footprint.
+      const iconWidth = iconSize * 1.05;
+      const MIN_GAP   = (iconWidth / centerR) * (180 / Math.PI) + 0.5;
 
+      // Assign angular slots avoiding overlap. Each new planet is pushed
+      // forward from its true longitude only as far as needed to clear the
+      // previously placed neighbour.
+      const placed = [];
       sorted.forEach(p => {
         let slot = p.lon;
-        const near = placed.filter(q => {
-          const diff = Math.abs(((slot - q.slot + 540) % 360) - 180);
-          return diff < MIN_GAP;
-        });
-        if (near.length > 0) {
-          slot = near[near.length - 1].slot + MIN_GAP;
+        if (placed.length > 0) {
+          const prev = placed[placed.length - 1];
+          const minSlot = prev.slot + MIN_GAP;
+          if (slot < minSlot) slot = minSlot;
         }
         placed.push({ ...p, slot });
       });
