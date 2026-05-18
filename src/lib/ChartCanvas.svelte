@@ -210,10 +210,10 @@
 
     // ── Planet ring drawing helper ───────────────────────────────────────────
     // Draws planet glyphs centred in the band between rInner and rOuter.
-    // Icon size is set to ≥ 75% of the band width.
-    function drawRing(planets, rInner, rOuter) {
+    // `iconSize` is the symbol font size in px — shared across rings so natal
+    // and transit glyphs are visually identical in size.
+    function drawRing(planets, rInner, rOuter, iconSize) {
       if (!planets || !planets.length) return;
-      const bandW   = rOuter - rInner;
       const centerR = (rInner + rOuter) / 2;
 
       // Sort by longitude for collision handling
@@ -245,16 +245,15 @@
 
         if (showNames) {
           // Symbol in upper portion, abbreviation in lower portion of band
-          ctx.font = `bold ${bandW * 0.50}px serif`;
+          ctx.font = `bold ${iconSize}px serif`;
           ctx.fillStyle = p.color;
-          ctx.fillText(p.symbol, lx, ly - bandW * 0.18);
+          ctx.fillText(p.symbol, lx, ly - iconSize * 0.35);
 
-          ctx.font = `${bandW * 0.30}px sans-serif`;
+          ctx.font = `${iconSize * 0.6}px sans-serif`;
           ctx.fillStyle = p.color + 'cc';
-          ctx.fillText(p.abbr, lx, ly + bandW * 0.28);
+          ctx.fillText(p.abbr, lx, ly + iconSize * 0.55);
         } else {
-          // Symbol alone fills ≥ 75% of band width
-          ctx.font = `bold ${bandW * 0.75}px serif`;
+          ctx.font = `bold ${iconSize}px serif`;
           ctx.fillStyle = p.color;
           ctx.fillText(p.symbol, lx, ly);
         }
@@ -278,11 +277,17 @@
       });
     }
 
-    // ── Draw natal planets (section 1-2) ─────────────────────────────────────
-    drawRing(bp, rNatalI, rDots);
+    // ── Draw planet rings — shared icon size = 75% of the smaller band, so
+    //    natal and transit glyphs are visually identical. ─────────────────────
+    const natalBandW = rDots  - rNatalI;
+    const transBandW = rSignI - rDots;
+    const iconSize   = Math.min(natalBandW, transBandW) * 0.75;
 
-    // ── Draw transit planets (section 2-3) ───────────────────────────────────
-    drawRing(cp, rDots, rSignI);
+    // Natal planets (section 1-2)
+    drawRing(bp, rNatalI, rDots, iconSize);
+
+    // Transit planets (section 2-3)
+    drawRing(cp, rDots, rSignI, iconSize);
 
     // ── Draw dot ring (circle 2 — natal + transit markers with alpha) ────────
     drawDots(bp, 'cc');   // natal: more opaque
