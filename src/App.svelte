@@ -239,13 +239,23 @@
     </Card.Root>
   {/if}
 
+  <!-- ── Chart info (time / location) ─────────────────────────────────── -->
+  {#if birthLabel || currentLabel}
+    <div class="w-full max-w-[680px] space-y-0.5 text-center text-xs text-muted-foreground">
+      {#if birthLabel}
+        <p>☽ {birthLabel}</p>
+      {/if}
+      {#if currentLabel}
+        <p>Transit: {currentLabel}</p>
+      {/if}
+    </div>
+  {/if}
+
   <!-- ── Chart ──────────────────────────────────────────────────────── -->
   <div class="aspect-square w-full max-w-[680px] overflow-hidden rounded-full border bg-[oklch(0.10_0.04_270)] dark:bg-[oklch(0.10_0.04_270)]">
     <ChartCanvas
       birthPlanets={birthPlanets}
       currentPlanets={currentPlanets}
-      birthLabel={birthLabel}
-      currentLabel={currentLabel}
       ascendant={birthAscendant}
       theme={theme}
     />
