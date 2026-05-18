@@ -1,183 +1,104 @@
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@import "tailwindcss";
+@import "tw-animate-css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* ── Theme tokens ──────────────────────────────────────────────────────────
+ * shadcn-svelte uses CSS variables consumed by Tailwind utility classes
+ * (bg-background, text-foreground, …). Values are tuned to keep the dark
+ * astrology palette of the original design.
+ * IANA timezone data ships in the JS runtime (Intl API), so no tzdata
+ * file is needed in the bundle.
+ * ──────────────────────────────────────────────────────────────────────── */
 :root {
-  --bg: #06060f;
-  --surface: #0e0e22;
-  --border: #1e2240;
-  --text: #c8d4e8;
-  --muted: #556677;
-  --accent: #4466bb;
+  --background: oklch(0.13 0.04 270);
+  --foreground: oklch(0.88 0.03 250);
+
+  --card: oklch(0.17 0.04 270);
+  --card-foreground: oklch(0.88 0.03 250);
+
+  --popover: oklch(0.17 0.04 270);
+  --popover-foreground: oklch(0.88 0.03 250);
+
+  --primary: oklch(0.62 0.13 265);
+  --primary-foreground: oklch(0.98 0.01 250);
+
+  --secondary: oklch(0.22 0.04 270);
+  --secondary-foreground: oklch(0.88 0.03 250);
+
+  --muted: oklch(0.22 0.04 270);
+  --muted-foreground: oklch(0.55 0.04 250);
+
+  --accent: oklch(0.28 0.06 265);
+  --accent-foreground: oklch(0.95 0.02 250);
+
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 250);
+
+  --border: oklch(0.28 0.05 265);
+  --input: oklch(0.22 0.05 265);
+  --ring: oklch(0.50 0.10 265);
+
+  --radius: 0.5rem;
 }
 
-html, body {
-  height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, sans-serif;
-  font-size: 14px;
+.dark {
+  /* Same tokens — app is dark by default */
+  --background: oklch(0.13 0.04 270);
+  --foreground: oklch(0.88 0.03 250);
+  --card: oklch(0.17 0.04 270);
+  --card-foreground: oklch(0.88 0.03 250);
+  --popover: oklch(0.17 0.04 270);
+  --popover-foreground: oklch(0.88 0.03 250);
+  --primary: oklch(0.62 0.13 265);
+  --primary-foreground: oklch(0.98 0.01 250);
+  --secondary: oklch(0.22 0.04 270);
+  --secondary-foreground: oklch(0.88 0.03 250);
+  --muted: oklch(0.22 0.04 270);
+  --muted-foreground: oklch(0.55 0.04 250);
+  --accent: oklch(0.28 0.06 265);
+  --accent-foreground: oklch(0.95 0.02 250);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 250);
+  --border: oklch(0.28 0.05 265);
+  --input: oklch(0.22 0.05 265);
+  --ring: oklch(0.50 0.10 265);
 }
 
-.app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Header */
-header {
-  text-align: center;
-  width: 100%;
-  max-width: 700px;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+    min-height: 100%;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+  }
 }
-
-header h1 {
-  font-size: 1.6rem;
-  font-weight: 300;
-  letter-spacing: 0.1em;
-  color: #aac0e0;
-}
-
-header .subtitle {
-  font-size: 0.75rem;
-  color: var(--muted);
-  margin-top: 0.2rem;
-  letter-spacing: 0.05em;
-}
-
-.toggle-form {
-  margin-top: 0.5rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.75rem;
-}
-.toggle-form:hover { color: var(--text); border-color: var(--accent); }
-
-/* Birth form */
-.birth-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  justify-content: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  width: 100%;
-  max-width: 700px;
-}
-
-.birth-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.birth-form label span {
-  font-size: 0.7rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.birth-form input,
-.birth-form select {
-  background: #10102a;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  padding: 0.35rem 0.5rem;
-  font-size: 0.85rem;
-  outline: none;
-}
-
-.birth-form input:focus,
-.birth-form select:focus {
-  border-color: var(--accent);
-}
-
-.birth-form button[type=submit] {
-  background: var(--accent);
-  border: none;
-  border-radius: 4px;
-  color: #fff;
-  padding: 0.45rem 1.2rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-  align-self: flex-end;
-}
-.birth-form button[type=submit]:hover { background: #5577cc; }
-
-/* Chart */
-.chart-wrap {
-  width: 100%;
-  max-width: 680px;
-  aspect-ratio: 1;
-  background: #080818;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-/* Planet tables */
-.planet-tables {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-  width: 100%;
-  max-width: 700px;
-}
-
-table {
-  border-collapse: collapse;
-  font-size: 0.78rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-  min-width: 200px;
-  flex: 1;
-}
-
-caption {
-  padding: 0.4rem;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  background: #0c0c20;
-  border-bottom: 1px solid var(--border);
-}
-
-th {
-  padding: 0.3rem 0.6rem;
-  color: var(--muted);
-  font-weight: 400;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-td {
-  padding: 0.28rem 0.6rem;
-  border-bottom: 1px solid #111128;
-}
-
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #12122a; }
-
-.sym { font-size: 1em; }

@@ -36,9 +36,26 @@ npm run build     # production build in dist/
 ## Usage
 
 1. Open the app in a browser
-2. Enter your birth date, time, and UTC offset
-3. Click **Draw chart**
-4. The outer ring shows today's transits; they update every minute
+2. Enter your birth date, time, and **birth location** (searchable city list)
+3. The selected city's IANA time zone (e.g. `Asia/Kolkata`) is used to convert
+   your local birth time to UTC with DST handled automatically. If you skip the
+   location, the browser's default zone is used.
+4. Click **Draw chart**
+5. The outer ring shows today's transits; they update every minute
+
+## City data
+
+The location picker is backed by [`public/cities.json`](public/cities.json), a
+trimmed copy of the [GeoNames `cities15000`](https://download.geonames.org/export/dump/)
+dump (CC BY 4.0 — name, country, lat/lon, IANA time zone). A small curated
+starter file (~130 popular cities, ~10 KB) is committed by default so the app
+works out of the box; to replace it with the full ~25 000-city dataset run:
+
+```bash
+npm run build:cities      # downloads & rebuilds public/cities.json (~1 MB)
+```
+
+The fetcher is `scripts/build-cities.mjs` and uses only Node built-ins.
 
 ---
 
