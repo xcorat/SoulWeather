@@ -4,8 +4,6 @@
   let {
     birthPlanets = [],
     currentPlanets = [],
-    birthLabel = '',
-    currentLabel = '',
     ascendant = null,
     theme = 'dark',
   } = $props();
@@ -73,7 +71,7 @@
     return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
   }
 
-  function drawChart(bp = birthPlanets, cp = currentPlanets, bl = birthLabel, cl = currentLabel) {
+  function drawChart(bp = birthPlanets, cp = currentPlanets) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const W = canvas.width;
@@ -95,7 +93,6 @@
     const rTrans  = R * 0.68;   // transit (current) planet ring
     const rSplit  = R * 0.56;   // separator between outer & inner planet rings
     const rNatal  = R * 0.44;   // natal (birth) planet ring
-    const rCenter = R * 0.34;   // inner decorative circle
 
     // ── Zodiac band fill ─────────────────────────────────────────────────────
     ctx.beginPath();
@@ -121,7 +118,7 @@
     }
 
     // ── Circles ──────────────────────────────────────────────────────────────
-    const circles = [rOut, rSign, rSplit, rCenter];
+    const circles = [rOut, rSign, rSplit];
     circles.forEach((r, i) => {
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -169,32 +166,41 @@
       ctx.stroke();
     }
 
-    // ── Zodiac glyphs (always upright / horizontal) ─────────────────────────
-    const rGlyphOuter = (rOut + rSign) / 2 + (rOut - rSign) * 0.16;
-    const rGlyphInner = (rOut + rSign) / 2 - (rOut - rSign) * 0.18;
+    // ── Zodiac glyphs (upright) and sign names (rotated along outer arc) ────
+    const rGlyph   = rSign + (rOut - rSign) * 0.38;  // inner portion of band
+    const rNameArc = rSign + (rOut - rSign) * 0.80;  // near outer edge of band
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (let i = 0; i < 12; i++) {
       const midLon = i * 30 + 15;
-      const [gx, gy] = polarXY(cx, cy, rGlyphOuter, midLon);
+      const [gx, gy] = polarXY(cx, cy, rGlyph, midLon);
       ctx.font = `${R * 0.082}px serif`;
       ctx.fillStyle = P.glyph;
       ctx.fillText(ZODIAC_GLYPHS[i], gx, gy);
 
-      // Sign abbreviation below glyph
-      const [nx, ny] = polarXY(cx, cy, rGlyphInner, midLon);
-      ctx.font = `${R * 0.052}px sans-serif`;
+      // Sign abbreviation rotated tangentially along the outer arc
+      const a = lonAngle(midLon);
+      const tx = cx + rNameArc * Math.cos(a);
+      const ty = cy + rNameArc * Math.sin(a);
+      ctx.save();
+      ctx.translate(tx, ty);
+      let rot = a + Math.PI / 2;
+      if (Math.sin(a) > 0) rot += Math.PI; // flip lower-half text to stay readable
+      ctx.rotate(rot);
+      ctx.font = `${R * 0.042}px sans-serif`;
       ctx.fillStyle = P.signAbbr;
-      ctx.fillText(SIGN_NAMES[i], nx, ny);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(SIGN_NAMES[i], 0, 0);
+      ctx.restore();
     }
 
     // ── Ascendant marker ─────────────────────────────────────────────────────
     if (ascendant != null) {
-      // ASC is at the top by construction; draw a small arrow + label.
-      const [ax1, ay1] = polarXY(cx, cy, rCenter, ascendant);
-      const [ax2, ay2] = polarXY(cx, cy, rOut,    ascendant);
+      // ASC is at the top by construction; draw a line from center + label.
+      const [ax2, ay2] = polarXY(cx, cy, rOut, ascendant);
       ctx.beginPath();
-      ctx.moveTo(ax1, ay1);
+      ctx.moveTo(cx, cy);
       ctx.lineTo(ax2, ay2);
       ctx.strokeStyle = P.ascLine;
       ctx.lineWidth = 1.2;
@@ -238,7 +244,7 @@
         const labelA = lonAngle(p.slot);
 
         const dotR   = ringR;
-        const labelR = ringR + (isOuter ? R * 0.10 : -R * 0.10);
+        const labelR = ringR + R * 0.10; // labels go outward for both rings
 
         const dotX = cx + dotR * Math.cos(dotA);
         const dotY = cy + dotR * Math.sin(dotA);
@@ -250,7 +256,7 @@
         ctx.fill();
 
         // Tick line from ring boundary
-        const tickR = isOuter ? rSign - 2 : rCenter + 2;
+        const tickR = isOuter ? rSign - 2 : rSplit - 2;
         const tickX = cx + tickR * Math.cos(dotA);
         const tickY = cy + tickR * Math.sin(dotA);
         ctx.beginPath();
@@ -283,31 +289,11 @@
     // ── Draw transit planets (outer ring) ────────────────────────────────────
     drawRing(cp, rTrans, true);
 
-    // ── Center info ──────────────────────────────────────────────────────────
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    if (bl) {
-      ctx.font = `bold ${R * 0.085}px serif`;
-      ctx.fillStyle = P.centerHi;
-      ctx.fillText('☽', cx, cy - R * 0.10);
-      ctx.font = `${R * 0.048}px sans-serif`;
-      ctx.fillStyle = P.centerLo;
-      ctx.fillText(bl, cx, cy + R * 0.01);
-    } else {
-      ctx.font = `${R * 0.058}px sans-serif`;
-      ctx.fillStyle = P.placeholderHi;
-      ctx.fillText('Enter birth data', cx, cy - R * 0.04);
-      ctx.font = `${R * 0.042}px sans-serif`;
-      ctx.fillStyle = P.placeholderLo;
-      ctx.fillText('to see natal chart', cx, cy + R * 0.04);
-    }
-
-    if (cl) {
-      ctx.font = `${R * 0.04}px sans-serif`;
-      ctx.fillStyle = P.centerLo;
-      ctx.fillText(`Transit: ${cl}`, cx, cy + R * 0.13);
-    }
+    // ── Center decorative dot ─────────────────────────────────────────────────
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 0.012, 0, Math.PI * 2);
+    ctx.fillStyle = P.ring;
+    ctx.fill();
 
     // ── Legend ────────────────────────────────────────────────────────────────
     const legX = 8, legY = H - 22;
@@ -341,7 +327,7 @@
     // `ascendant` and `theme` are read via closure inside `drawChart`, so
     // touch them here so the effect re-runs when they change.
     ascendant; theme;
-    drawChart(birthPlanets, currentPlanets, birthLabel, currentLabel);
+    drawChart(birthPlanets, currentPlanets);
   });
 </script>
 
