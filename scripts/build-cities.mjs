@@ -54,7 +54,8 @@ async function main() {
     return;
   }
 
-  const workDir = await mkdir(path.join(tmpdir(), `geonames-${Date.now()}`), { recursive: true });
+  const workDir = path.join(tmpdir(), `geonames-${Date.now()}`);
+  await mkdir(workDir, { recursive: true });
   const zipPath = path.join(workDir, `${DATASET}.zip`);
   const txtPath = path.join(workDir, `${DATASET}.txt`);
 
