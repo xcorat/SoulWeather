@@ -25,6 +25,7 @@
       bg:        '#080818',
       band:      '#0c0c20',
       bandAlt:   'rgba(30,30,60,0.55)',
+      bandAngular: 'rgba(16,16,44,0.92)',
       ringOuter: '#4455aa',
       ring:      '#334466',
       ringDash:  '#223355',
@@ -39,15 +40,12 @@
       legend:    '#556677',
       ascLine:   '#ffcc66',
       ascLabel:  '#ffcc66',
-      houseAngular:   '#ffcc66',
-      houseAngularBg: 'rgba(255,204,80,0.10)',
-      houseNormal:    '#445577',
-      houseNormalBg:  null,
     },
     light: {
       bg:        '#f6f6fb',
       band:      '#e9eaf3',
       bandAlt:   'rgba(180,185,210,0.45)',
+      bandAngular: 'rgba(170,180,210,0.72)',
       ringOuter: '#3c4a8a',
       ring:      '#a0aac0',
       ringDash:  '#b8c0d4',
@@ -62,10 +60,6 @@
       legend:    '#5a6585',
       ascLine:   '#c87a1e',
       ascLabel:  '#c87a1e',
-      houseAngular:   '#a05010',
-      houseAngularBg: 'rgba(160,80,16,0.10)',
-      houseNormal:    '#8090b0',
-      houseNormalBg:  null,
     },
   };
 
@@ -110,26 +104,21 @@
 
     const signBandW  = rOut   - rSignI;   // width of sign names band
 
-    // ── Zodiac band fill (sign names section: circle 3 → circle 4) ──────────
-    ctx.beginPath();
-    ctx.arc(cx, cy, rOut, 0, Math.PI * 2);
-    ctx.arc(cx, cy, rSignI, 0, Math.PI * 2, true);
-    ctx.fillStyle = P.band;
-    ctx.fill();
-
-    // ── Alternate sign background shading ───────────────────────────────────
+    // ── Sign names band shading (outer circle) ──────────────────────────────
+    // Angular houses (1,4,7,10) are darker. Other houses keep alternating shades.
+    const ascSignIndex = ascendant != null ? Math.floor((((ascendant % 360) + 360) % 360) / 30) : 0;
     for (let i = 0; i < 12; i++) {
-      if (i % 2 === 0) continue;
+      const houseNum = ((i - ascSignIndex) % 12 + 12) % 12 + 1;
+      const isAngular = houseNum === 1 || houseNum === 4 || houseNum === 7 || houseNum === 10;
       const startA = lonAngle(i * 30);
       const endA   = lonAngle((i + 1) * 30);
       ctx.beginPath();
-      ctx.moveTo(cx, cy);
       // signs increase counter-clockwise, which maps to clockwise on the
       // canvas (Y axis is inverted), so we draw the arc with anticlockwise=true.
       ctx.arc(cx, cy, rOut, startA, endA, true);
       ctx.arc(cx, cy, rSignI, endA, startA, false);
       ctx.closePath();
-      ctx.fillStyle = P.bandAlt;
+      ctx.fillStyle = isAngular ? P.bandAngular : (i % 2 === 0 ? P.band : P.bandAlt);
       ctx.fill();
     }
 
@@ -310,44 +299,6 @@
     // ── Draw dot ring (circle 2 — natal + transit markers with alpha) ────────
     drawDots(bp, 'cc');   // natal: more opaque
     drawDots(cp, '88');   // transit: more transparent
-    // ── House sectors and numbers ─────────────────────────────────────────────
-    // In whole-sign houses the sign containing the ascendant is house 1;
-    // subsequent signs are houses 2-12 in order.
-    const ANGULAR_HOUSES = new Set([1, 4, 7, 10]);
-    const ascSignIndex = ascendant != null ? Math.floor(((ascendant % 360) + 360) % 360 / 30) : 0;
-    const rHouseNum = rNatalI * 0.62;   // label radius inside inner-empty area
-
-    for (let i = 0; i < 12; i++) {
-      const houseNum = ((i - ascSignIndex) % 12 + 12) % 12 + 1;
-      const isAngular = ANGULAR_HOUSES.has(houseNum);
-
-      // Sector background fill for angular houses
-      if (isAngular && P.houseAngularBg) {
-        const startA = lonAngle(i * 30);
-        const endA   = lonAngle((i + 1) * 30);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, rNatalI, startA, endA, true);
-        ctx.closePath();
-        ctx.fillStyle = P.houseAngularBg;
-        ctx.fill();
-      }
-
-      // House number label
-      const midLon = i * 30 + 15;
-      const [hx, hy] = polarXY(cx, cy, rHouseNum, midLon);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      if (isAngular) {
-        ctx.font = `bold ${R * 0.055}px sans-serif`;
-        ctx.fillStyle = P.houseAngular;
-      } else {
-        ctx.font = `${R * 0.045}px sans-serif`;
-        ctx.fillStyle = P.houseNormal;
-      }
-      ctx.fillText(String(houseNum), hx, hy);
-    }
-
     // ── Center decorative dot ─────────────────────────────────────────────────
     ctx.beginPath();
     ctx.arc(cx, cy, R * 0.012, 0, Math.PI * 2);
