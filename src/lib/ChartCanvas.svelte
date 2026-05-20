@@ -25,6 +25,7 @@
       bg:        '#080818',
       band:      '#0c0c20',
       bandAlt:   'rgba(30,30,60,0.55)',
+      bandAngular: 'rgba(16,16,44,0.92)',
       ringOuter: '#4455aa',
       ring:      '#334466',
       ringDash:  '#223355',
@@ -44,6 +45,7 @@
       bg:        '#f6f6fb',
       band:      '#e9eaf3',
       bandAlt:   'rgba(180,185,210,0.45)',
+      bandAngular: 'rgba(170,180,210,0.72)',
       ringOuter: '#3c4a8a',
       ring:      '#a0aac0',
       ringDash:  '#b8c0d4',
@@ -102,26 +104,21 @@
 
     const signBandW  = rOut   - rSignI;   // width of sign names band
 
-    // ── Zodiac band fill (sign names section: circle 3 → circle 4) ──────────
-    ctx.beginPath();
-    ctx.arc(cx, cy, rOut, 0, Math.PI * 2);
-    ctx.arc(cx, cy, rSignI, 0, Math.PI * 2, true);
-    ctx.fillStyle = P.band;
-    ctx.fill();
-
-    // ── Alternate sign background shading ───────────────────────────────────
+    // ── Sign names band shading (outer circle) ──────────────────────────────
+    // Angular/kona houses (1,4,7,10) are darker. Others keep the base band color.
+    const ascSignIndex = ascendant != null ? Math.floor((((ascendant % 360) + 360) % 360) / 30) : 0;
     for (let i = 0; i < 12; i++) {
-      if (i % 2 === 0) continue;
+      const houseNum = ((i - ascSignIndex) % 12 + 12) % 12 + 1;
+      const isAngular = houseNum === 1 || houseNum === 4 || houseNum === 7 || houseNum === 10;
       const startA = lonAngle(i * 30);
       const endA   = lonAngle((i + 1) * 30);
       ctx.beginPath();
-      ctx.moveTo(cx, cy);
       // signs increase counter-clockwise, which maps to clockwise on the
       // canvas (Y axis is inverted), so we draw the arc with anticlockwise=true.
       ctx.arc(cx, cy, rOut, startA, endA, true);
       ctx.arc(cx, cy, rSignI, endA, startA, false);
       ctx.closePath();
-      ctx.fillStyle = P.bandAlt;
+      ctx.fillStyle = isAngular ? P.bandAngular : P.band;
       ctx.fill();
     }
 
@@ -164,7 +161,9 @@
 
     // ── Zodiac glyphs (upright) and sign names (rotated along outer arc) ────
     const rGlyph = rSignI + signBandW * 0.38;    // inner portion of sign band
-    const rNameArc = rOut;                       // outermost circle (ASC ring)
+    // Offset by half the text's radial height so the outer edge of the label
+    // is flush with the outer circle and the text is fully visible inside the band.
+    const rNameArc = rOut - signBandW * 0.14;    // near outer circle, fully inside band
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (let i = 0; i < 12; i++) {
@@ -307,14 +306,6 @@
     ctx.arc(cx, cy, R * 0.012, 0, Math.PI * 2);
     ctx.fillStyle = P.ring;
     ctx.fill();
-
-    // ── Legend ────────────────────────────────────────────────────────────────
-    const legX = 8, legY = H - 22;
-    ctx.font = `${R * 0.038}px sans-serif`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = P.legend;
-    ctx.fillText('Inner: Natal  ·  Outer: Transit  ·  Vedic / Sidereal (Lahiri)', legX, legY);
   }
 
   onMount(() => {
