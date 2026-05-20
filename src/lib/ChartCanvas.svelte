@@ -161,7 +161,9 @@
 
     // ── Zodiac glyphs (upright) and sign names (rotated along outer arc) ────
     const rGlyph = rSignI + signBandW * 0.38;    // inner portion of sign band
-    const rNameArc = rOut;                       // outermost circle (ASC ring)
+    // Offset by half the text's radial height so the outer edge of the label
+    // is flush with the outer circle and the text is fully visible inside the band.
+    const rNameArc = rOut - signBandW * 0.14;    // near outer circle, fully inside band
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (let i = 0; i < 12; i++) {
