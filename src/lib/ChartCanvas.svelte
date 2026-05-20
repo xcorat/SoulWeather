@@ -105,7 +105,7 @@
     const signBandW  = rOut   - rSignI;   // width of sign names band
 
     // ── Sign names band shading (outer circle) ──────────────────────────────
-    // Angular houses (1,4,7,10) are darker. Other houses keep alternating shades.
+    // Angular/kona houses (1,4,7,10) are darker. Others keep the base band color.
     const ascSignIndex = ascendant != null ? Math.floor((((ascendant % 360) + 360) % 360) / 30) : 0;
     for (let i = 0; i < 12; i++) {
       const houseNum = ((i - ascSignIndex) % 12 + 12) % 12 + 1;
@@ -118,7 +118,7 @@
       ctx.arc(cx, cy, rOut, startA, endA, true);
       ctx.arc(cx, cy, rSignI, endA, startA, false);
       ctx.closePath();
-      ctx.fillStyle = isAngular ? P.bandAngular : (i % 2 === 0 ? P.band : P.bandAlt);
+      ctx.fillStyle = isAngular ? P.bandAngular : P.band;
       ctx.fill();
     }
 
